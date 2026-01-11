@@ -90,7 +90,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   verification: {
-    google: "google-site-verification-code", // Replace with actual code if available
+    google: "google-site-verification: google929b1c4c62238e0e.html", // Replace with actual code if available
   },
   category: "technology",
 
