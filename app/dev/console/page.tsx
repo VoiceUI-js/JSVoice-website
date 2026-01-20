@@ -35,7 +35,7 @@ export default function DevConsolePage() {
 
     // Initialize amplitude monitoring & Canvas Rendering
     useEffect(() => {
-        let animationId: number;
+
 
         if (isListening) {
             addLog('info', 'Audio stream capture started', 'AUDIO.STREAM');
@@ -116,7 +116,7 @@ export default function DevConsolePage() {
 
         return () => {
             stopAmplitude();
-            if (animationId) cancelAnimationFrame(animationId);
+
         };
     }, [isListening]);
 
