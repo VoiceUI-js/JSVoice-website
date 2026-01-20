@@ -89,7 +89,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   verification: {
-    google: "qeLreV93us0nBHvloGc2a8NjO-m0yfereg59L6MREeE",
+    google: "5F58VJT4czWc-nVFCgw9adUc-tGCkAt9WZMzu158bOU",
   },
   category: "technology",
 
