@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 
-type SoundType = 'wake' | 'success' | 'nav' | 'scroll' | 'fx';
+type SoundType = 'wake' | 'success' | 'nav' | 'scroll' | 'fx' | 'error';
 
 export function useSoundEffects() {
     // Cache AudioContext to prevent persistent re-creation
@@ -80,6 +80,15 @@ export function useSoundEffects() {
                     masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
                     osc.start();
                     osc.stop(ctx.currentTime + 1.2);
+                    break;
+                case 'error':
+                    // Negative buzz
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                    masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
                     break;
                 default:
                     // Short robotic confirmation

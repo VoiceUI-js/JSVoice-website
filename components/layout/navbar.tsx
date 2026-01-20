@@ -67,6 +67,7 @@ export function Navbar() {
                     <div className="hidden lg:flex items-center space-x-2">
                         {[
                             { name: 'Documentation', href: '/docs' },
+                            { name: 'Dev Tools', href: '/dev/console' },
                             { name: 'Blog', href: '/blogs' },
                             { name: 'Playground', href: '/playground' },
                             { name: 'Showcase', href: '/showcase' }
@@ -192,10 +193,11 @@ export function Navbar() {
                             href="https://github.com/VoiceUI-js/VoiceUI"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#1F1F1F] border border-[#CC5500]/20 text-white hover:border-[#CC5500] hover:glow-orange hover:scale-105 transition-all duration-200"
+                            className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#1F1F1F] border border-[#CC5500]/20 text-white hover:border-[#CC5500] hover:glow-orange hover:scale-105 transition-all duration-200 group relative overflow-hidden"
                         >
-                            <Github className="w-4 h-4" />
+                            <Github className="w-4 h-4 group-hover:text-[#CC5500] transition-colors" />
                             <span className="text-sm font-medium">GitHub</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                         </a>
 
                         {/* Get Started Button - Hide on Documentation Page */}
@@ -230,6 +232,7 @@ export function Navbar() {
                         <div className="flex flex-col space-y-2">
                             {[
                                 { name: 'Documentation', href: '/docs' },
+                                { name: 'Dev Tools', href: '/dev/console' },
                                 { name: 'Blog', href: '/blogs' },
                                 { name: 'Playground', href: '/playground' },
                                 { name: 'Showcase', href: '/showcase' }

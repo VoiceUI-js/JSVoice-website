@@ -32,10 +32,10 @@ interface VoiceContextType {
     toggleListening: () => void;
     matrixMode: boolean;
     setMatrixMode: (val: boolean) => void;
-    ghostMode: boolean;
     setGhostMode: (val: boolean) => void;
     startAmplitude: (cb: (data: number[]) => void) => void;
     stopAmplitude: () => void;
+    emulateCommand: (text: string) => void;
 }
 
 export function GlobalVoiceProvider({ children }: { children: React.ReactNode }) {
@@ -65,6 +65,12 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
             }
             originalError.apply(console, args);
         };
+
+        if (typeof window !== 'undefined' && !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            console.warn("[JSVoice] Speech Recognition not supported in this browser.");
+            toast("Voice control not supported in this browser. Please use Chrome or Edge.", "error");
+            return;
+        }
 
         if (voiceRef.current) return;
 
@@ -254,6 +260,32 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
         }
     };
 
+    const emulateCommand = (input: string) => {
+        if (!voiceRef.current) return;
+        const cmdText = input.toLowerCase().trim();
+        setTranscript(cmdText);
+        setLastCommand(cmdText);
+
+        // Try to find match in strict commands
+        const commands = voiceRef.current.commands;
+        if (commands && Array.isArray(commands)) {
+            const match = commands.find((c: any) => c.command === cmdText || cmdText.includes(c.command));
+            if (match && typeof match.callback === 'function') {
+                match.callback();
+                playFx('success');
+                return;
+            }
+        }
+        // If the library was object-based
+        if (commands && typeof commands === 'object' && !Array.isArray(commands)) {
+            if (commands[cmdText]) {
+                commands[cmdText]();
+                playFx('success');
+                return;
+            }
+        }
+    };
+
     const audioContextRef = useRef<AudioContext | null>(null);
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
@@ -274,13 +306,24 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
                     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
                 }
                 const ctx = audioContextRef.current;
-                if (ctx.state === 'suspended') await ctx.resume();
 
-                // Get stream (independent of voice engine stream for now to ensure access)
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                streamRef.current = stream;
+                // Ensure context is running (it can start suspended)
+                if (ctx.state === 'suspended') {
+                    await ctx.resume();
+                }
 
-                const source = ctx.createMediaStreamSource(stream);
+                // If we already have a stream from the voice engine, we should try to reuse it if exposed,
+                // but usually the native engine hides the stream. We must get a new one or handle errors.
+                if (!streamRef.current || !streamRef.current.active) {
+                    streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+
+                // Cleaning up old connections if called repeatedly
+                if (sourceRef.current) {
+                    try { sourceRef.current.disconnect(); } catch (e) { }
+                }
+
+                const source = ctx.createMediaStreamSource(streamRef.current);
                 const analyser = ctx.createAnalyser();
                 analyser.fftSize = 64;
                 analyser.smoothingTimeConstant = 0.8;
@@ -293,7 +336,8 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
                 const dataArray = new Uint8Array(bufferLength);
 
                 const renderFrame = () => {
-                    analyser.getByteFrequencyData(dataArray);
+                    if (!analyserRef.current) return;
+                    analyserRef.current.getByteFrequencyData(dataArray);
                     // Map first 20 bins to output
                     const bars: number[] = [];
                     // Using a subset of bins for better visual representation of speech range
@@ -326,19 +370,23 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
             cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
         }
+        // We do NOT stop the stream here because it might be shared or needed for the recognition
+        // We only disconnect the analyser
         if (sourceRef.current) {
-            sourceRef.current.disconnect();
+            try { sourceRef.current.disconnect(); } catch (e) { }
             sourceRef.current = null;
         }
         if (analyserRef.current) {
-            analyserRef.current.disconnect();
+            try { analyserRef.current.disconnect(); } catch (e) { }
             analyserRef.current = null;
         }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
     };
+
+    // Internal helper for FX
+    const playFx = (type: 'success' | 'error' | 'nav') => {
+        // Use the hook's player if available
+        playSound(type);
+    }
 
     return (
         <VoiceContext.Provider value={{
@@ -353,7 +401,8 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
             ghostMode,
             setGhostMode,
             startAmplitude,
-            stopAmplitude
+            stopAmplitude,
+            emulateCommand
         }}>
             {children}
         </VoiceContext.Provider>

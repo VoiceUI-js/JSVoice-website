@@ -19,14 +19,25 @@ export default function WakeWordPage() {
             <DocsHeader
                 title="Wake Word Detection"
                 description="Enable hands-free activation using a custom phrase like 'Hey Computer'."
-                badges={["Hands-free", "Optimization"]}
+                badges={["Hands-free", "Privacy Warning"]}
             />
 
             <DocsSection title="How it Works">
                 <p>
-                    Wake word mode keeps the microphone active but only triggers commands after a specific phrase is detected. This emulates the experience of smart assistants like Alexa or Siri.
+                    Wake word mode keeps the microphone listener active but silences command execution until a specific keyword is heard. This creates a "Hands Free" experience similar to smart home devices.
                 </p>
             </DocsSection>
+
+            <div className="p-6 my-8 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                <h4 className="flex items-center gap-2 text-lg font-bold text-orange-500 mb-2">
+                    ⚠️ Privacy Warning
+                </h4>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                    This feature works by <strong>continuously streaming audio</strong> to the speech recognition provider (e.g., Google) to convert it to text. JSVoice then checks that text stream for your keyword.
+                    <br /><br />
+                    This is <strong>not</strong> an offline, on-device wake word engine. Do not use this feature if you require strict privacy or if you are using a paid API (like OpenAI Whisper) usage-based pricing, as "listening" costs money.
+                </p>
+            </div>
 
             <DocsSection title="Configuration">
                 <p>
@@ -37,33 +48,34 @@ export default function WakeWordPage() {
                     language="javascript"
                     code={`const voice = new JSVoice({
   wakeWord: 'hey assistant',
-  wakeWordTimeout: 5000, // 5 seconds to give command after activation
+  wakeWordTimeout: 5000, 
   onWakeWordDetected: (word) => {
-    console.log('Wake word detected:', word);
-    // You might play a sound effect here
-  }
-});
+    // 1. Play a 'ding' sound
+    playSound('wake');
 
-await voice.start();`}
+    // 2. Show UI feedback
+    console.log('Listening for command...');
+  }
+});`}
                 />
             </DocsSection>
 
             <DocsSection title="Interaction Flow">
                 <ol className="list-decimal list-inside space-y-4 text-gray-400 ml-4">
                     <li>
-                        <strong className="text-white">Idle State:</strong> The system listens specifically for the wake word.
+                        <strong className="text-white">Standby:</strong> The microphone listens, but commands are ignored.
                     </li>
                     <li>
-                        <strong className="text-white">Activation:</strong> User says "Hey Assistant". System triggers `onWakeWordDetected` and acts as "Active".
+                        <strong className="text-white">Activation:</strong> User says "Hey Assistant". System fires `onWakeWordDetected`.
                     </li>
                     <li>
-                        <strong className="text-white">Listening Window:</strong> User has `wakeWordTimeout` (default 5s) to speak a command (e.g., "Scroll down").
+                        <strong className="text-white">Active Window:</strong> The system enters an "Active" state for 5 seconds (configurable).
                     </li>
                     <li>
-                        <strong className="text-white">Execution:</strong> If a command is recognized, it's executed, and the system returns to Idle.
+                        <strong className="text-white">Execution:</strong> If a valid command (e.g. "Scroll Down") is spoken within the window, it executes.
                     </li>
                     <li>
-                        <strong className="text-white">Timeout:</strong> If no command is heard within 5s, it returns to Idle to save resources.
+                        <strong className="text-white">Reset:</strong> After the timeout or command execution, the system returns to Standby.
                     </li>
                 </ol>
             </DocsSection>

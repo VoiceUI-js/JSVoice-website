@@ -10,7 +10,7 @@ export default function RecognitionPage() {
             <DocsHeader
                 title="Voice Recognition"
                 description="The core engine for converting spoken language into executable text."
-                badges={["SpeechSynthesis", "Web API"]}
+                badges={["Pluggable Engines", "Web API", "Whisper"]}
             />
 
             <DocsSection title="Basic Usage">
@@ -69,11 +69,6 @@ voice.toggle();`}
                                 <td className="px-4 py-3 font-mono">[]</td>
                                 <td className="px-4 py-3">Array of custom engine classes (e.g. WhisperEngine).</td>
                             </tr>
-                            <tr>
-                                <td className="px-4 py-3 text-[#CC5500] font-mono">engine</td>
-                                <td className="px-4 py-3 font-mono">null</td>
-                                <td className="px-4 py-3">Specific engine instance to use.</td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -81,14 +76,25 @@ voice.toggle();`}
 
             <DocsSection title="Pluggable Engines">
                 <p>
-                    JSVoice now supports a pluggable architecture. You can use the default browser API or plug in external services like OpenAI Whisper.
+                    JSVoice supports a fully pluggable architecture. While it ships with a <code>NativeSpeechEngine</code> (browser) by default, you can easily swap this for higher-accuracy cloud providers.
                 </p>
+
+                <div className="space-y-4">
+                    <h4 className="text-white font-medium">Using OpenAI Whisper</h4>
+                    <p className="text-sm">
+                        To use Whisper for improved accuracy (at the cost of latency/usage fees), inject the engine via the constructor.
+                    </p>
+                </div>
+
                 <CodeBlock
                     language="javascript"
                     code={`import { WhisperEngine } from 'jsvoice-engines';
                     
 const voice = new JSVoice({
-    engines: [WhisperEngine]
+    // Using a custom engine completely replaces the browser native one
+    engines: [
+        new WhisperEngine({ apiKey: 'YOUR_OPENAI_KEY' })
+    ]
 });`}
                 />
             </DocsSection>
