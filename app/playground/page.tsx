@@ -1,24 +1,38 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, RotateCcw, Download, Share2, Mic, Terminal, Settings, Command, Activity, Volume2, Sparkles, AlertCircle, Trophy, Zap, MessageSquare, Check, FileCode, BarChart3, Radio, Headphones } from 'lucide-react';
+import { Play, RotateCcw, Download, Share2, Mic, Terminal, Settings, Command, Activity, Volume2, Sparkles, AlertCircle, Trophy, Zap, MessageSquare, Check, FileCode, BarChart3, Radio, Headphones, Copy } from 'lucide-react';
 import { CodeBlock } from '@/components/code/code-block';
 import { VoiceOrb } from '@/components/hero/voice-orb';
 import { useGlobalVoice } from '@/components/providers/global-voice-provider';
 import { motion, AnimatePresence } from 'framer-motion';
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/themes/prism-tomorrow.css'; // Dark theme
 
 export default function PlaygroundPage() {
-    const { voiceStatus, transcript, lastCommand, toggleListening } = useGlobalVoice();
+    const { voiceStatus, transcript, lastCommand, toggleListening, voice, startAmplitude, stopAmplitude } = useGlobalVoice();
     const [selectedPreset, setSelectedPreset] = useState('basic');
     const [consoleOutput, setConsoleOutput] = useState<{ msg: string, type: 'system' | 'voice' | 'user' | 'transcript' }[]>([]);
     const [isMounted, setIsMounted] = useState(false);
     const [sensitivity, setSensitivity] = useState(0);
+    const [code, setCode] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
     const consoleRef = useRef<HTMLDivElement>(null);
+    const amplitudeRef = useRef<number[]>([]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
 
     useEffect(() => {
         setIsMounted(true);
+        setCode(presets.basic);
         setConsoleOutput([
-            { msg: 'JSVoice Environment v2.4 initialized', type: 'system' },
+            { msg: 'JSVoice Environment v1.0.2 initialized', type: 'system' },
             { msg: 'Global Voice Context secured.', type: 'system' },
             { msg: 'Ready for Wake Word: "Hello Voice"', type: 'system' }
         ]);
@@ -39,17 +53,24 @@ voice.addCommand('matrix mode', () => {
 });`
     };
 
-    // Simulated sensitivity meter (actual sensitivity is in VoiceOrb, but we show a visual proxy here)
+    useEffect(() => {
+        setCode(presets[selectedPreset as keyof typeof presets]);
+    }, [selectedPreset]);
+
+    // Use Real Amplitude Data from v1.0.2
     useEffect(() => {
         if (voiceStatus === 'listening') {
-            const interval = setInterval(() => {
-                setSensitivity(Math.random() * 100);
-            }, 100);
-            return () => clearInterval(interval);
+            startAmplitude((bars) => {
+                // bars is array of 0-1 values. Calculate average sensitivity.
+                const avg = bars.reduce((a, b) => a + b, 0) / bars.length;
+                setSensitivity(avg * 100);
+            });
         } else {
+            stopAmplitude();
             setSensitivity(0);
         }
-    }, [voiceStatus]);
+        return () => stopAmplitude();
+    }, [voiceStatus, startAmplitude, stopAmplitude]);
 
     useEffect(() => {
         if (lastCommand) {
@@ -79,7 +100,17 @@ voice.addCommand('matrix mode', () => {
     }, [consoleOutput]);
 
     const runCode = () => {
-        setConsoleOutput(prev => [...prev, { msg: 'Pushing changes to Global Controller...', type: 'system' }, { msg: 'Live reload successful.', type: 'system' }]);
+        try {
+            if (!voice) throw new Error("Voice instance not ready");
+
+            // Create a function that executes the code with 'voice' in scope
+            const func = new Function('voice', 'window', 'document', code);
+            func(voice, window, document);
+
+            setConsoleOutput(prev => [...prev, { msg: 'Code executed successfully.', type: 'system' }]);
+        } catch (e: any) {
+            setConsoleOutput(prev => [...prev, { msg: `Error: ${e.message}`, type: 'system' }]);
+        }
     };
 
     const challenges = [
@@ -174,12 +205,64 @@ voice.addCommand('matrix mode', () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-4 bg-[#050505] min-h-[200px] max-h-[300px] overflow-auto custom-scrollbar">
-                                <CodeBlock
-                                    code={presets[selectedPreset as keyof typeof presets]}
-                                    language="javascript"
-                                    showLineNumbers={true}
-                                />
+                            <div className="relative flex-grow min-h-[300px] bg-[#0A0A0A] p-2 overflow-hidden flex flex-col">
+                                <div className="flex-1 relative rounded-xl bg-[#050505] border border-white/5 overflow-hidden flex flex-col group/editor">
+                                    {/* Editor Header */}
+                                    <div className="flex items-center justify-between px-4 py-2 bg-white/[0.02] border-b border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-2 h-2 rounded-full bg-[#CC5500] shadow-[0_0_8px_rgba(204,85,0,0.5)] animate-pulse" />
+                                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Input Stream</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="px-2 py-0.5 rounded bg-[#CC5500]/10 text-[#CC5500] text-[9px] font-bold border border-[#CC5500]/20 uppercase tracking-wider">
+                                                javascript
+                                            </div>
+                                            <div className="w-px h-3 bg-white/10" />
+                                            <button
+                                                onClick={handleCopy}
+                                                className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-white transition-colors"
+                                            >
+                                                {isCopied ? (
+                                                    <Check className="w-3 h-3 text-green-500" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
+                                                <span className={isCopied ? 'text-green-500' : ''}>{isCopied ? 'Copied' : 'Copy'}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Scrollable Editor Area */}
+                                    <div className="flex-1 overflow-auto custom-scrollbar relative flex bg-[#050505]">
+                                        {/* Sticky Line Numbers */}
+                                        <div className="py-5 pl-4 pr-3 text-right font-mono text-sm bg-[#050505] border-r border-white/5 select-none sticky left-0 z-20 min-h-full"
+                                            style={{ fontFamily: '"Fira Code", "Fira Mono", monospace' }}>
+                                            {code.split('\n').map((_, i) => (
+                                                <div key={i} className="leading-[24px] text-white/20 text-[11px]">{i + 1}</div>
+                                            ))}
+                                        </div>
+
+                                        {/* Editor Component */}
+                                        <div className="flex-1 min-w-0">
+                                            <Editor
+                                                value={code}
+                                                onValueChange={code => setCode(code)}
+                                                highlight={code => highlight(code, languages.js, 'javascript')}
+                                                padding={20}
+                                                style={{
+                                                    fontFamily: '"Fira Code", "Fira Mono", monospace',
+                                                    fontSize: 13,
+                                                    lineHeight: '24px',
+                                                    backgroundColor: 'transparent',
+                                                    color: '#e4e4e4',
+                                                    minHeight: '100%'
+                                                }}
+                                                className="min-h-full"
+                                                textareaClassName="focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

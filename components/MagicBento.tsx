@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { Mic, Play, Zap, Radio, BarChart3, FileCode, ArrowUpRight } from 'lucide-react';
+import { useIsMobile } from '@/lib/utils';
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 300;
@@ -550,7 +551,7 @@ const MagicBento: React.FC<MagicBentoProps> = ({
     enableMagnetism = false
 }) => {
     const gridRef = useRef<HTMLDivElement>(null);
-    const isMobile = useMobileDetection();
+    const isMobile = useIsMobile();
     const shouldDisableAnimations = disableAnimations || isMobile;
 
     const itemsToDisplay = features || cardData;

@@ -47,6 +47,9 @@ export function Footer({ className, forceVisible = false }: FooterProps) {
                         <Link href="/docs" className="text-sm font-medium text-gray-400 hover:text-[#FF8A3D] transition-colors">
                             Documentation
                         </Link>
+                        <Link href="/blogs" className="text-sm font-medium text-gray-400 hover:text-[#FF8A3D] transition-colors">
+                            Blog
+                        </Link>
                         <Link href="/playground" className="text-sm font-medium text-gray-400 hover:text-[#FF8A3D] transition-colors">
                             Playground
                         </Link>

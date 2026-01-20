@@ -53,6 +53,7 @@ export function Navbar() {
                                 src="/logo.png"
                                 alt="JSVoice Logo"
                                 fill
+                                sizes="(max-width: 640px) 32px, 40px"
                                 className="object-contain drop-shadow-[0_0_8px_rgba(204,85,0,0.5)]"
                                 priority
                             />
@@ -66,6 +67,7 @@ export function Navbar() {
                     <div className="hidden lg:flex items-center space-x-2">
                         {[
                             { name: 'Documentation', href: '/docs' },
+                            { name: 'Blog', href: '/blogs' },
                             { name: 'Playground', href: '/playground' },
                             { name: 'Showcase', href: '/showcase' }
                         ].map((item) => {
@@ -228,6 +230,7 @@ export function Navbar() {
                         <div className="flex flex-col space-y-2">
                             {[
                                 { name: 'Documentation', href: '/docs' },
+                                { name: 'Blog', href: '/blogs' },
                                 { name: 'Playground', href: '/playground' },
                                 { name: 'Showcase', href: '/showcase' }
                             ].map((item) => {

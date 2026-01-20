@@ -64,9 +64,33 @@ voice.toggle();`}
                                 <td className="px-4 py-3 font-mono">true</td>
                                 <td className="px-4 py-3">Automatically restart if the browser stops the engine.</td>
                             </tr>
+                            <tr>
+                                <td className="px-4 py-3 text-[#CC5500] font-mono">engines</td>
+                                <td className="px-4 py-3 font-mono">[]</td>
+                                <td className="px-4 py-3">Array of custom engine classes (e.g. WhisperEngine).</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 text-[#CC5500] font-mono">engine</td>
+                                <td className="px-4 py-3 font-mono">null</td>
+                                <td className="px-4 py-3">Specific engine instance to use.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
+            </DocsSection>
+
+            <DocsSection title="Pluggable Engines">
+                <p>
+                    JSVoice now supports a pluggable architecture. You can use the default browser API or plug in external services like OpenAI Whisper.
+                </p>
+                <CodeBlock
+                    language="javascript"
+                    code={`import { WhisperEngine } from 'jsvoice-engines';
+                    
+const voice = new JSVoice({
+    engines: [WhisperEngine]
+});`}
+                />
             </DocsSection>
 
             <div className="flex justify-between pt-8 border-t border-white/10 mt-12">

@@ -19,7 +19,7 @@ export default function IntroductionPage() {
             <DocsHeader
                 title="Introduction"
                 description="JSVoice is a lightweight, zero-dependency JavaScript library that brings voice command and speech synthesis capabilities to web applications."
-                badges={["v0.2.1", "Zero Dependencies", "< 2KB gzipped"]}
+                badges={["v1.0.2", "Zero Dependencies", "< 2KB gzipped"]}
             />
 
             <DocsSection>
@@ -65,6 +65,7 @@ export default function IntroductionPage() {
                     {[
                         "Zero external dependencies - keeps your bundle light",
                         "Built-in wake word detection ('Hey Computer')",
+                        "Pluggable Architecture (Support for Whisper, etc.)",
                         "Real-time audio visualization hooks",
                         "TypeScript ready with full type definitions",
                         "Works offline (depending on browser engine)"

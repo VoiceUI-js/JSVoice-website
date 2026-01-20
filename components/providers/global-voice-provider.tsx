@@ -4,6 +4,9 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import JSVoice from 'jsvoice'; // Import directly from jsvoice package
 import { useToast } from '@/components/ui/toast';
 import { useRouter } from 'next/navigation';
+import { useSoundEffects } from '@/components/hooks/use-sound-fx';
+import { useVoiceStateMachine } from '@/components/hooks/use-voice-state-machine';
+import { useVisualModes } from '@/components/hooks/use-visual-modes';
 
 interface VoiceContextType {
     voice: any;
@@ -20,103 +23,37 @@ interface VoiceContextType {
 
 const VoiceContext = createContext<VoiceContextType | undefined>(undefined);
 
+interface VoiceContextType {
+    voice: any;
+    isListening: boolean;
+    voiceStatus: 'idle' | 'listening' | 'processing' | 'active';
+    lastCommand: string;
+    transcript: string;
+    toggleListening: () => void;
+    matrixMode: boolean;
+    setMatrixMode: (val: boolean) => void;
+    ghostMode: boolean;
+    setGhostMode: (val: boolean) => void;
+    startAmplitude: (cb: (data: number[]) => void) => void;
+    stopAmplitude: () => void;
+}
+
 export function GlobalVoiceProvider({ children }: { children: React.ReactNode }) {
     const [voiceStatus, setVoiceStatus] = useState<'idle' | 'listening' | 'processing' | 'active'>('idle');
     const [lastCommand, setLastCommand] = useState<string>('');
     const [transcript, setTranscript] = useState<string>('');
     const [matrixMode, setMatrixMode] = useState(false);
+    const [isLightMode, setIsLightMode] = useState(false);
     const [ghostMode, setGhostMode] = useState(false);
     const voiceRef = useRef<any>(null);
     const { toast } = useToast();
     const router = useRouter();
 
-    // Side effect for Matrix Mode
-    useEffect(() => {
-        if (matrixMode) {
-            document.documentElement.style.filter = 'invert(1) hue-rotate(180deg) brightness(0.8)';
-        } else {
-            document.documentElement.style.filter = 'none';
-        }
-    }, [matrixMode]);
+    // Manage Visual Side Effects via Hook
+    useVisualModes({ matrixMode, isLightMode, ghostMode });
 
-    // Side effect for Ghost Mode
-    useEffect(() => {
-        if (ghostMode) {
-            document.body.style.opacity = '0.3';
-        } else {
-            document.body.style.opacity = '1';
-        }
-    }, [ghostMode]);
-
-    const playActivationSound = (type: 'wake' | 'success' | 'nav' | 'scroll' | 'fx' = 'wake') => {
-        try {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
-
-            const masterGain = ctx.createGain();
-            masterGain.connect(ctx.destination);
-            masterGain.gain.setValueAtTime(0, ctx.currentTime);
-            masterGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.01);
-
-            const osc = ctx.createOscillator();
-            const filter = ctx.createBiquadFilter();
-
-            osc.connect(filter);
-            filter.connect(masterGain);
-
-            if (type === 'wake') {
-                // Sweeping robotic "Up" sound
-                osc.type = 'sawtooth';
-                filter.type = 'lowpass';
-                osc.frequency.setValueAtTime(100, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.2);
-                filter.frequency.setValueAtTime(200, ctx.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(4000, ctx.currentTime + 0.2);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.4);
-            } else if (type === 'nav') {
-                // Digital blip-blop
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(400, ctx.currentTime);
-                osc.frequency.setValueAtTime(600, ctx.currentTime + 0.05);
-                osc.frequency.setValueAtTime(850, ctx.currentTime + 0.1);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.2);
-            } else if (type === 'scroll') {
-                // Mechanical whoosh
-                osc.type = 'sine';
-                filter.type = 'bandpass';
-                filter.Q.value = 15;
-                osc.frequency.setValueAtTime(150, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.3);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.35);
-            } else if (type === 'fx') {
-                // Deep matrix space descend
-                osc.type = 'sawtooth';
-                filter.type = 'lowpass';
-                osc.frequency.setValueAtTime(1200, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.8);
-                filter.frequency.setValueAtTime(2000, ctx.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.8);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-                osc.start();
-                osc.stop(ctx.currentTime + 1.2);
-            } else {
-                // Short robotic confirmation
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(900, ctx.currentTime);
-                osc.frequency.setValueAtTime(1800, ctx.currentTime + 0.05);
-                masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.15);
-            }
-        } catch (e) { console.error(e) }
-    };
+    const { playSound } = useSoundEffects();
+    const { state: machineState, transition } = useVoiceStateMachine();
 
     useEffect(() => {
         // Suppress recurring library logs globally
@@ -139,7 +76,13 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
             onWakeWordDetected: () => {
                 setVoiceStatus('listening');
                 toast("System Link Active.", "info");
-                playActivationSound('wake');
+                playSound('wake');
+                // Switch to latched mode (disable wake word requirement)
+                // This allows the user to issue multiple commands freely
+                if (voice && voice.setOption) {
+                    voice.setOption('wakeWord', null);
+                }
+                transition('WAKE');
                 setLastCommand('');
                 // Greeting removed per user request
             },
@@ -168,43 +111,78 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
         // Scroll Control
         voice.addCommand('scroll down', () => {
             window.scrollBy({ top: 700, behavior: 'smooth' });
-            playActivationSound('scroll');
+            playSound('scroll');
         });
 
         voice.addCommand('scroll up', () => {
             window.scrollBy({ top: -700, behavior: 'smooth' });
-            playActivationSound('scroll');
+            playSound('scroll');
+        });
+
+        voice.addCommand('scroll to top', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            playSound('scroll');
+        });
+
+        voice.addCommand('scroll to bottom', () => {
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            playSound('scroll');
         });
 
         voice.addCommand('stop listening', () => {
             setVoiceStatus('idle');
+            // Re-enable wake word requirement
+            if (voiceRef.current && voiceRef.current.setOption) {
+                voiceRef.current.setOption('wakeWord', 'hello voice');
+            }
             toast("Node Dormant.", "info");
-            playActivationSound('nav');
+            playSound('nav');
+            transition('SLEEP');
         });
 
         // Site Effects
         voice.addCommand('matrix mode', () => {
             setMatrixMode(true);
-            playActivationSound('fx');
+            playSound('fx');
             voice.speak('Simulation adjusted.');
+        });
+
+        voice.addCommand('matrix off', () => {
+            setMatrixMode(false);
+            playSound('fx');
+            voice.speak('Matrix simulation disabled.');
+        });
+
+        voice.addCommand('light mode', () => {
+            setIsLightMode(true);
+            setMatrixMode(false);
+            playSound('success');
+            voice.speak('Light theme activated.');
+        });
+
+        voice.addCommand('dark mode', () => {
+            setIsLightMode(false);
+            setMatrixMode(false);
+            playSound('success');
+            voice.speak('Dark theme activated.');
         });
 
         voice.addCommand('ghost mode', () => {
             setGhostMode(true);
-            playActivationSound('fx');
+            playSound('fx');
             voice.speak('Phase shift complete.');
         });
 
         voice.addCommand('normal mode', () => {
             setMatrixMode(false);
             setGhostMode(false);
-            playActivationSound('success');
+            playSound('success');
             voice.speak('Reality restored.');
         });
 
         // Navigation Aliases
         const navPlayground = () => {
-            playActivationSound('nav');
+            playSound('nav');
             router.push('/playground');
         };
         voice.addCommand('go to playground', navPlayground);
@@ -212,7 +190,7 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
         voice.addCommand('show playground', navPlayground);
 
         const navDocs = () => {
-            playActivationSound('nav');
+            playSound('nav');
             router.push('/docs');
         };
         voice.addCommand('go to docs', navDocs);
@@ -222,32 +200,32 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
         voice.addCommand('zoom in', () => {
             const currentZoom = parseFloat(document.body.style.zoom || '1');
             document.body.style.zoom = (currentZoom + 0.1).toString();
-            playActivationSound('success');
+            playSound('success');
         });
 
         voice.addCommand('zoom out', () => {
             const currentZoom = parseFloat(document.body.style.zoom || '1');
             document.body.style.zoom = (currentZoom - 0.1).toString();
-            playActivationSound('success');
+            playSound('success');
         });
 
         voice.addCommand('reset zoom', () => {
             document.body.style.zoom = '1';
-            playActivationSound('nav');
+            playSound('nav');
         });
 
         voice.addCommand('system diagnostics', () => {
-            playActivationSound('fx');
+            playSound('fx');
             voice.speak('Diagnostics initiated. Core temperature nominal. Neural link bandwidth at maximum. All systems functional.');
         });
 
         voice.addCommand('go home', () => {
-            playActivationSound('nav');
+            playSound('nav');
             router.push('/');
         });
 
         voice.addCommand('reload system', () => {
-            playActivationSound('fx');
+            playSound('fx');
             voice.speak('Reinitializing core.');
             setTimeout(() => window.location.reload(), 1200);
         });
@@ -276,6 +254,92 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
         }
     };
 
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const rafRef = useRef<number | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    const startAmplitude = (cb: (data: number[]) => void) => {
+        // Try library first
+        if (voiceRef.current && typeof voiceRef.current.startAmplitude === 'function') {
+            voiceRef.current.startAmplitude(cb, { mode: 'bars', barCount: 20 });
+            return;
+        }
+
+        // Fallback: Manual Audio Visualization
+        const initVisualizer = async () => {
+            try {
+                if (!audioContextRef.current) {
+                    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+                }
+                const ctx = audioContextRef.current;
+                if (ctx.state === 'suspended') await ctx.resume();
+
+                // Get stream (independent of voice engine stream for now to ensure access)
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                streamRef.current = stream;
+
+                const source = ctx.createMediaStreamSource(stream);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 64;
+                analyser.smoothingTimeConstant = 0.8;
+                source.connect(analyser);
+
+                sourceRef.current = source;
+                analyserRef.current = analyser;
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const renderFrame = () => {
+                    analyser.getByteFrequencyData(dataArray);
+                    // Map first 20 bins to output
+                    const bars: number[] = [];
+                    // Using a subset of bins for better visual representation of speech range
+                    for (let i = 0; i < 20; i++) {
+                        const val = dataArray[i] || 0;
+                        bars.push(val / 255);
+                    }
+                    cb(bars);
+                    rafRef.current = requestAnimationFrame(renderFrame);
+                };
+                renderFrame();
+            } catch (err) {
+                console.warn("[GlobalVoiceProvider] Visualization fallback failed:", err);
+            }
+        };
+
+        // Delay slightly to avoid conflict with mic activation
+        initVisualizer();
+    };
+
+    const stopAmplitude = () => {
+        // Try library first
+        if (voiceRef.current && typeof voiceRef.current.stopAmplitude === 'function') {
+            voiceRef.current.stopAmplitude();
+            return;
+        }
+
+        // Fallback Cleanup
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+        if (sourceRef.current) {
+            sourceRef.current.disconnect();
+            sourceRef.current = null;
+        }
+        if (analyserRef.current) {
+            analyserRef.current.disconnect();
+            analyserRef.current = null;
+        }
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+    };
+
     return (
         <VoiceContext.Provider value={{
             voice: voiceRef.current,
@@ -287,7 +351,9 @@ export function GlobalVoiceProvider({ children }: { children: React.ReactNode })
             matrixMode,
             setMatrixMode,
             ghostMode,
-            setGhostMode
+            setGhostMode,
+            startAmplitude,
+            stopAmplitude
         }}>
             {children}
         </VoiceContext.Provider>

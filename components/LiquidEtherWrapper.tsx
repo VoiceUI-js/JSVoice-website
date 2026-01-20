@@ -11,6 +11,12 @@ const LiquidEther = dynamic(() => import('./LiquidEther'), {
 
 type LiquidEtherProps = ComponentProps<typeof LiquidEther>;
 
+import { useIsMobile } from '@/lib/utils';
+
 export default function LiquidEtherWrapper(props: LiquidEtherProps) {
+    const isMobile = useIsMobile();
+
+    if (isMobile) return null;
+
     return <LiquidEther {...props} />;
 }

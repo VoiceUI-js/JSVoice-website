@@ -50,12 +50,17 @@ export default function HomePage() {
       description: 'Full type definitions included for complete IDE autocomplete and type checking.',
     },
     {
+      icon: Rocket,
+      title: 'Pluggable Engines',
+      description: 'Support for custom speech recognition engines like OpenAI Whisper or Google Cloud Speech.',
+    },
+    {
       icon: Package,
       title: 'Zero Dependencies',
       description: 'Pure JavaScript with no external libraries. Just 32KB minified and gzipped.',
     },
     {
-      icon: Rocket,
+      icon: Check,
       title: 'Production Ready',
       description: 'Comprehensive error handling, extensive documentation, and active maintenance.',
     },

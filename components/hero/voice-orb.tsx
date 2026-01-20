@@ -111,11 +111,17 @@ function AnimatedOrb({ isListening }: OrbProps) {
 }
 
 export function VoiceOrb({ isListening }: OrbProps) {
+    // We keep the Orb on mobile but maybe with lower quality if needed, 
+    // but the 3D element is central to the design.
+    // However, we can disable the shadows or extra lights if it's too much.
+    // For now, let's keep it as is but ensure the canvas has a transparent background
+    // and potentially lower the pixel ratio if possible (Drei handles this often).
+
     return (
         <div className="w-full h-full relative flex items-center justify-center overflow-visible">
-            <Canvas camera={{ position: [0, 0, 10], fov: 35 }}>
+            <Canvas camera={{ position: [0, 0, 10], fov: 35 }} dpr={[1, 1.5]}>
                 <ambientLight intensity={1.0} />
-                <spotLight position={[10, 10, 10]} angle={0.2} penumbra={1} intensity={2} castShadow />
+                <spotLight position={[10, 10, 10]} angle={0.2} penumbra={1} intensity={2} castShadow={false} />
                 <pointLight position={[-10, -10, -10]} intensity={1.5} color="#FF8A3D" />
                 <AnimatedOrb isListening={isListening} />
             </Canvas>

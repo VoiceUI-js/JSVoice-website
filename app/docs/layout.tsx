@@ -9,8 +9,34 @@ export default function DocsLayout({
 }: {
     children: React.ReactNode
 }) {
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "JSVoice Documentation",
+        "description": "Comprehensive guide for integrating voice commands into web applications using JSVoice.",
+        "image": "https://jsvoice.dev/og-image.png",
+        "author": {
+            "@type": "Organization",
+            "name": "JSVoice Team"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "JSVoice",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://jsvoice.dev/logo.png"
+            }
+        },
+        "datePublished": "2024-01-01",
+        "dateModified": new Date().toISOString()
+    };
+
     return (
         <DocsVoiceProvider>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <div className="flex min-h-screen bg-[#050505] pt-24 relative overflow-x-hidden">
                 {/* Ambient Backgrounds */}
                 <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#CC5500]/5 blur-[120px] rounded-full pointer-events-none" />

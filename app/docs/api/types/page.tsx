@@ -23,6 +23,8 @@ export default function TypesPage() {
   lang?: string;              // Default: 'en-US'
   autoRestart?: boolean;      // Default: true
   restartDelay?: number;      // Default: 500ms
+  engines?: any[];            // Default: [] (Custom engine classes)
+  engine?: any;               // Default: null (Specific engine instance)
   
   // Wake Word Settings
   wakeWord?: string | null;          // Default: null
@@ -37,6 +39,10 @@ export default function TypesPage() {
   onSpeechEnd?: () => void;
   onCommandRecognized?: (phrase: string, raw: string, result: any, args?: any) => void;
   onCommandNotRecognized?: (raw: string) => void;
+  onActionPerformed?: (action: string, payload: any) => void;
+  onMicrophonePermissionGranted?: () => void;
+  onMicrophonePermissionDenied?: (error: any) => void;
+  onWakeWordDetected?: (word: string) => void;
   onError?: (error: any) => void;
   onStatusChange?: (message: string) => void;
 }`}
